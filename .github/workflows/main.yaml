@@ -4,52 +4,44 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Mengambil kode terbaru dari repositori GitHub
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # 2. Setup Java JDK (Wajib untuk kompilasi Android/Gradle)
       - name: Set up Java JDK
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      # 3. Setup Flutter Environment
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+          cache: true
 
-      # 4. Unduh semua package/dependencies yang terdaftar di pubspec.yaml
       - name: Install Dependencies
         run: flutter pub get
 
-      # =======================================================================
-      # LANGKAH BARU: Mengubah Package Name secara otomatis sebelum proses build
-      # =======================================================================
-      - name: Ganti Package Name Otomatis
+      # Mengubah ID Aplikasi secara paksa sebelum dicompile
+      - name: Ganti Package Name via Linux sed
         run: |
-          flutter pub add dev:change_app_package_name
-          dart run change_app_package_name:main com.client.babeinfo
+          sed -i 's/applicationId ".*"/applicationId "com.client.babeinfo"/' android/app/build.gradle
 
-      # 5. Jalankan perintah generate icon jika kamu menggunakan flutter_launcher_icons
       - name: Generate Launcher Icons
-        run: dart run flutter_launcher_icons || true 
+        run: dart run flutter_launcher_icons || echo "Launcher icons skip / gagal, lanjut build..."
 
-      # 6. Proses kompilasi menjadi APK rilis resmi
       - name: Build APK Release
         run: flutter build apk --release
 
-      # 7. Upload file APK yang berhasil di-build ke tab 'Actions' GitHub agar bisa kamu download
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Katalog-PO-Release-APK
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: build/app/outputs/flutter-apk/*.apk
