@@ -1,38 +1,55 @@
-name: Auto Deploy Flutter Web
+name: Build Android APK
 
 on:
   push:
     branches:
-      - main # Workflow berjalan setiap kali kamu push ke branch main
+      - main
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Ambil Source Code
+      # 1. Mengambil kode terbaru dari repositori GitHub
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Set Up Java (Diperlukan Flutter)
-        uses: actions/setup-java@v3
+      # 2. Setup Java JDK (Wajib untuk kompilasi Android/Gradle)
+      - name: Set up Java JDK
+        uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
+          distribution: 'temurin'
           java-version: '17'
 
-      - name: Set Up Flutter SDK
+      # 3. Setup Flutter Environment
+      - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-          flutter-version: '3.19.0' # Menyesuaikan dengan versi Flutter SDK kamu
 
-      - name: Ambil Dependencies App
+      # 4. Unduh semua package/dependencies yang terdaftar di pubspec.yaml
+      - name: Install Dependencies
         run: flutter pub get
 
-      - name: Build Flutter Web Otomatis
-        run: flutter build web --base-href "/katalogdt-frontendonly/"
+      # =======================================================================
+      # LANGKAH BARU: Mengubah Package Name secara otomatis sebelum proses build
+      # =======================================================================
+      - name: Ganti Package Name Otomatis
+        run: |
+          flutter pub add dev:change_app_package_name
+          dart run change_app_package_name:main com.client.babeinfo
 
-      - name: Lempar Hasil Build ke GitHub Pages
-        uses: JamesIves/github-pages-deploy-action@v4
+      # 5. Jalankan perintah generate icon jika kamu menggunakan flutter_launcher_icons
+      - name: Generate Launcher Icons
+        run: dart run flutter_launcher_icons || true 
+
+      # 6. Proses kompilasi menjadi APK rilis resmi
+      - name: Build APK Release
+        run: flutter build apk --release
+
+      # 7. Upload file APK yang berhasil di-build ke tab 'Actions' GitHub agar bisa kamu download
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
         with:
-          folder: build/web
-          branch: gh-pages # Hasil build otomatis dikirim ke sini
+          name: Katalog-PO-Release-APK
+          path: build/app/outputs/flutter-apk/app-release.apk
