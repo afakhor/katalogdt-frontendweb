@@ -26,27 +26,33 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Install Dependencies
-        run: flutter pub get
-
-      - name: Ganti Package Name Otomatis (Auto-Fix)
+      # Men-generate platform android dan mengubah package name secara otomatis
+      - name: Create Android Platform & Ganti Package Name
         run: |
+          echo "📝 Memperbaiki nama project di pubspec.yaml agar lowercase..."
+          sed -i 's/^name:.*/name: katalog_dt/' pubspec.yaml
+
           if [ ! -d "android" ]; then
             echo "⚠️ Folder android tidak ditemukan. Men-generate folder native..."
-            flutter create . --platforms=android
+            flutter create . --project-name=katalog_dt --platforms=android
           fi
 
-          TARGET_FILE=$(find . -path "*/android/app/build.gradle" | head -n 1)
+          # Mencari file build.gradle atau build.gradle.kts langsung di folder android/app/
+          TARGET_FILE=$(find android/app/ -name "build.gradle*" | head -n 1)
 
           if [ -z "$TARGET_FILE" ]; then
-            echo "❌ ERROR: File build.gradle tetap tidak ditemukan!"
+            echo "❌ ERROR: File konfigurasi Gradle tidak ditemukan!"
             exit 1
           else
             echo "✅ File ditemukan di: $TARGET_FILE"
+            # Mengubah ID aplikasi untuk format Groovy (spasi) maupun Kotlin DSL (sama dengan)
             sed -i 's/applicationId\s*=\s*".*"/applicationId = "com.client.babeinfo"/' "$TARGET_FILE"
             sed -i 's/applicationId\s*".*"/applicationId "com.client.babeinfo"/' "$TARGET_FILE"
             echo "✅ Sukses mengubah package name menjadi com.client.babeinfo"
           fi
+
+      - name: Install Dependencies
+        run: flutter pub get
 
       - name: Generate Launcher Icons
         run: dart run flutter_launcher_icons || echo "Launcher icons skip, lanjut build..."
