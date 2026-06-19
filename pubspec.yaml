@@ -17,7 +17,6 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  # 1. Tambahkan package ini di dev_dependencies
   flutter_launcher_icons: ^0.13.1
 
 flutter:
@@ -25,8 +24,7 @@ flutter:
   assets:
     - assets/images/
 
-# 2. Tambahkan konfigurasi ini di bagian paling bawah (sejajar dengan baris flutter:)
 flutter_launcher_icons:
   android: "launcher_icon"
   image_path: "assets/images/logo.png"
-  adaptive_icon_background: "#FFFFFF" # Warna background jika logo kamu transparan/bulat
+  adaptive_icon_background: "#FFFFFF"
