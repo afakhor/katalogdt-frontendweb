@@ -1,0 +1,61 @@
+name: Build Android APK
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Ganti Package Name Otomatis (Auto-Fix)
+        run: |
+          if [ ! -d "android" ]; then
+            echo "⚠️ Folder android tidak ditemukan. Men-generate folder native..."
+            flutter create . --platforms=android
+          fi
+
+          TARGET_FILE=$(find . -path "*/android/app/build.gradle" | head -n 1)
+
+          if [ -z "$TARGET_FILE" ]; then
+            echo "❌ ERROR: File build.gradle tetap tidak ditemukan!"
+            exit 1
+          else
+            echo "✅ File ditemukan di: $TARGET_FILE"
+            sed -i 's/applicationId\s*=\s*".*"/applicationId = "com.client.babeinfo"/' "$TARGET_FILE"
+            sed -i 's/applicationId\s*".*"/applicationId "com.client.babeinfo"/' "$TARGET_FILE"
+            echo "✅ Sukses mengubah package name menjadi com.client.babeinfo"
+          fi
+
+      - name: Generate Launcher Icons
+        run: dart run flutter_launcher_icons || echo "Launcher icons skip, lanjut build..."
+
+      - name: Build APK Release
+        run: flutter build apk --release
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Katalog-PO-Release-APK
+          path: build/app/outputs/flutter-apk/*.apk
